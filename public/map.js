@@ -5,10 +5,20 @@ let placedItems = [];
 let map;
 let selectedModel = 'sheep';
 let isPlacingMode = false;
+let isMobileDevice = false;
+
+// Check if the device is mobile
+function checkMobileDevice() {
+    isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    console.log("Is mobile device:", isMobileDevice);
+}
 
 // Initialize the map
 function initMap() {
     console.log("Initializing map...");
+    
+    // Check if we're on a mobile device
+    checkMobileDevice();
     
     try {
         // Create the map centered on the user's location or a default location
@@ -66,10 +76,23 @@ function createMap(center) {
         }).addTo(map);
         
         // Add click listener for placing items
+        // Remove standard click if we already have one
+        map.off('click', handleMapClick);
+        
+        // For mobile, use both click and tap events
         map.on('click', handleMapClick);
+        
+        // When on mobile, also watch for touchend events
+        if (isMobileDevice) {
+            console.log("Setting up mobile-specific handlers");
+            setupMobileHandlers();
+        }
         
         // Load any previously saved items
         loadPlacedItems();
+        
+        // Set up the Place button event handler
+        setupPlaceButton();
         
         console.log("Map initialization complete");
     } catch (e) {
@@ -77,11 +100,88 @@ function createMap(center) {
     }
 }
 
+// Set up mobile-specific handlers
+function setupMobileHandlers() {
+    // Use alternate tap detection for mobile
+    const mapContainer = document.getElementById('map');
+    if (mapContainer) {
+        mapContainer.addEventListener('touchend', function(e) {
+            if (!isPlacingMode) return;
+            
+            // Prevent default to avoid double events
+            e.preventDefault();
+            
+            console.log("Mobile touchend detected");
+            
+            // Get the touch coordinates
+            if (e.changedTouches && e.changedTouches.length > 0) {
+                const touch = e.changedTouches[0];
+                const containerRect = mapContainer.getBoundingClientRect();
+                const touchX = touch.clientX - containerRect.left;
+                const touchY = touch.clientY - containerRect.top;
+                
+                // Convert to map coordinates
+                const point = L.point(touchX, touchY);
+                const latlng = map.containerPointToLatLng(point);
+                
+                console.log("Touch coords:", touchX, touchY);
+                console.log("Map coords:", latlng);
+                
+                // Create an event-like object for the handler
+                const touchEvent = {
+                    latlng: latlng,
+                    originalEvent: e
+                };
+                
+                // Call the map click handler
+                handleMapClick(touchEvent);
+            }
+        }, false);
+    }
+}
+
+// Setup place button event handler
+function setupPlaceButton() {
+    const placeBtn = document.getElementById('place-btn');
+    if (placeBtn) {
+        // Remove existing event listeners first
+        const newPlaceBtn = placeBtn.cloneNode(true);
+        placeBtn.parentNode.replaceChild(newPlaceBtn, placeBtn);
+        
+        // Add the event listener
+        newPlaceBtn.addEventListener('click', function() {
+            console.log("Place button clicked, enabling placing mode");
+            isPlacingMode = true;
+            document.getElementById('instructions').textContent = 'Tap on the map to place the item';
+            
+            // Add a visual indicator that placement mode is active
+            newPlaceBtn.classList.add('active');
+            document.body.classList.add('placing-mode');
+            
+            // Auto-disable after 30 seconds for safety
+            setTimeout(() => {
+                if (isPlacingMode) {
+                    isPlacingMode = false;
+                    newPlaceBtn.classList.remove('active');
+                    document.body.classList.remove('placing-mode');
+                    document.getElementById('instructions').textContent = 'Click "Place on Map" to place an object';
+                }
+            }, 30000);
+        });
+    }
+}
+
 // Handle map clicks for placing items
 function handleMapClick(e) {
-    if (!isPlacingMode) return;
+    console.log("Map click/tap detected");
+    
+    if (!isPlacingMode) {
+        console.log("Not in placing mode, ignoring");
+        return;
+    }
     
     const { lat, lng } = e.latlng;
+    console.log("Placing item at:", lat, lng);
     
     // Create a new item
     const newItem = {
@@ -100,7 +200,14 @@ function handleMapClick(e) {
     updatePlacedItemsList();
     savePlacedItems();
     
+    // Exit placing mode
     isPlacingMode = false;
+    
+    // Remove active indicators
+    const placeBtn = document.getElementById('place-btn');
+    if (placeBtn) placeBtn.classList.remove('active');
+    document.body.classList.remove('placing-mode');
+    
     document.getElementById('instructions').textContent = 'Item placed! Click "Place on Map" to place another.';
 }
 

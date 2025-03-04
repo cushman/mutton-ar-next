@@ -7,6 +7,8 @@
 body {
     font-family: Arial, sans-serif;
     overflow: hidden;
+    color: #333;
+    font-size: 16px;
 }
 
 .app-container {
@@ -30,11 +32,13 @@ body {
     cursor: pointer;
     padding: 14px 16px;
     font-size: 16px;
+    font-weight: bold;
     flex: 1;
 }
 
 .tab-btn.active {
     background-color: #ddd;
+    color: #000;
 }
 
 .tab-content {
@@ -82,37 +86,77 @@ body {
     bottom: 20px;
     left: 50%;
     transform: translateX(-50%);
-    background-color: rgba(255, 255, 255, 0.8);
-    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.95);
+    padding: 20px;
     border-radius: 8px;
     z-index: 1000;
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.2);
-    width: 80%;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    width: 90%;
     max-width: 400px;
+    color: #000;
 }
 
 #model-select, #place-btn {
     width: 100%;
-    padding: 10px;
-    margin-bottom: 10px;
+    padding: 12px;
+    margin-bottom: 12px;
+    font-size: 16px;
+    border-radius: 4px;
+    border: 1px solid #ccc;
+}
+
+#place-btn {
+    background-color: #4285f4;
+    color: white;
+    border: none;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#place-btn:hover {
+    background-color: #3367d6;
 }
 
 #instructions {
     text-align: center;
-    margin-bottom: 10px;
+    margin-bottom: 15px;
+    font-size: 16px;
+    font-weight: bold;
+    color: #333;
+    padding: 8px;
+    background-color: #f9f9f9;
+    border-radius: 4px;
 }
 
 #placed-items-list {
     max-height: 150px;
     overflow-y: auto;
     border-top: 1px solid #ddd;
-    padding-top: 10px;
+    padding-top: 15px;
+}
+
+#placed-items-list h3 {
+    margin-bottom: 10px;
+    color: #333;
 }
 
 #items-list li {
-    margin-bottom: 5px;
+    margin-bottom: 8px;
     display: flex;
     justify-content: space-between;
+    background-color: #f5f5f5;
+    padding: 8px;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.delete-btn {
+    background-color: #f44336;
+    color: white;
+    border: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
 }
 
 .ar-controls {
@@ -124,14 +168,80 @@ body {
 }
 
 #back-to-map {
-    padding: 10px 20px;
+    padding: 12px 24px;
     background-color: #fff;
     border: none;
     border-radius: 5px;
     box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    font-size: 16px;
+    font-weight: bold;
 }
 
 /* Hide A-Frame VR button and loading screen */
 .a-enter-vr, .a-loader-title {
     display: none !important;
+}
+
+/* Placing mode styles */
+body.placing-mode {
+    cursor: crosshair;
+}
+
+#place-btn.active {
+    background-color: #ea4335;
+    animation: pulse 1.5s infinite;
+}
+
+@keyframes pulse {
+    0% {
+        box-shadow: 0 0 0 0 rgba(234, 67, 53, 0.7);
+    }
+    70% {
+        box-shadow: 0 0 0 10px rgba(234, 67, 53, 0);
+    }
+    100% {
+        box-shadow: 0 0 0 0 rgba(234, 67, 53, 0);
+    }
+}
+
+/* Mobile-specific styles */
+@media (max-width: 768px) {
+    .controls {
+        width: 95%;
+        padding: 15px;
+        bottom: 10px;
+    }
+    
+    #instructions {
+        font-size: 14px;
+    }
+    
+    #model-select, #place-btn {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    .tab-btn {
+        padding: 10px;
+        font-size: 14px;
+    }
+    
+    /* Make touch targets larger on mobile */
+    .leaflet-control-zoom a {
+        width: 36px !important;
+        height: 36px !important;
+        line-height: 36px !important;
+        font-size: 18px !important;
+    }
+    
+    .leaflet-touch .leaflet-control-layers, 
+    .leaflet-touch .leaflet-bar {
+        border: 2px solid rgba(0,0,0,0.2);
+    }
+    
+    /* Make delete buttons easier to tap */
+    .delete-btn {
+        padding: 8px 12px;
+        font-size: 14px;
+    }
 } 
