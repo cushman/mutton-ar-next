@@ -20,62 +20,54 @@ declare global {
     L: LeafletStatic;
     initMap: (containerId?: string) => void;
     mapInitialized: boolean;
+    THREE: any;
+    initAR: () => void;
+    cleanupAR: () => void;
+    checkARSupport: () => boolean;
   }
 }
 
 // Import scripts in the client component
 export default function ARGeolocation() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const arSceneRef = useRef<HTMLDivElement>(null);
   const leafletLoadedRef = useRef(false);
+  const threeLoadedRef = useRef(false);
   const [activeTab, setActiveTab] = useState('map-view');
 
   useEffect(() => {
     console.log("ARGeolocation component mounted");
     loadMap();
     
-    // Set up tab switching
-    setupTabSwitching();
-    
     return () => {
-      // Clean up event listeners
-      const tabButtons = document.querySelectorAll('.tab-btn');
-      tabButtons.forEach(button => {
-        button.removeEventListener('click', handleTabClick);
-      });
+      // Clean up AR resources when component unmounts
+      if (typeof window !== 'undefined' && window.cleanupAR) {
+        window.cleanupAR();
+      }
     };
   }, []);
 
-  const setupTabSwitching = () => {
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(button => {
-      button.addEventListener('click', handleTabClick);
-    });
-  };
+  // Effect to handle tab changes
+  useEffect(() => {
+    console.log(`Tab changed to: ${activeTab}`);
+    
+    if (activeTab === 'map-view') {
+      // Make sure map is initialized when switching to map view
+      if (typeof window !== 'undefined' && window.L && mapRef.current) {
+        if (!window.mapInitialized && typeof window.initMap === 'function') {
+          console.log("Initializing map on tab change");
+          window.initMap('map');
+        }
+      }
+    } else if (activeTab === 'ar-view') {
+      // Load Three.js and initialize AR when switching to AR view
+      loadThreeJS();
+    }
+  }, [activeTab]);
 
-  const handleTabClick = (e: Event) => {
-    const target = e.currentTarget as HTMLElement;
-    const tabId = target.getAttribute('data-tab');
-    
-    if (!tabId) return;
-    
+  const handleTabClick = (tabId: string) => {
     console.log(`Switching to tab: ${tabId}`);
     setActiveTab(tabId);
-    
-    // Update active tab button
-    const tabButtons = document.querySelectorAll('.tab-btn');
-    tabButtons.forEach(btn => btn.classList.remove('active'));
-    target.classList.add('active');
-    
-    // Show the selected tab content
-    const tabContents = document.querySelectorAll('.tab-content');
-    tabContents.forEach(content => {
-      content.classList.remove('active');
-    });
-    
-    const selectedTab = document.getElementById(tabId);
-    if (selectedTab) {
-      selectedTab.classList.add('active');
-    }
   };
 
   const loadMap = () => {
@@ -151,28 +143,59 @@ export default function ARGeolocation() {
     }
   };
 
-  const handleDOMContentLoaded = () => {
-    console.log('DOM content loaded event fired');
-    if (typeof window.initMap === 'function' && !window.mapInitialized) {
-      window.mapInitialized = true;
-      console.log('Initializing map from DOMContentLoaded handler');
-    }
-  };
-
-  useEffect(() => {
+  const loadThreeJS = () => {
     if (typeof window !== 'undefined') {
-      // Check if the DOM is already loaded
-      if (document.readyState === 'complete') {
-        handleDOMContentLoaded();
-      } else {
-        // Otherwise, add an event listener for when it does load
-        window.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
-        return () => {
-          window.removeEventListener('DOMContentLoaded', handleDOMContentLoaded);
+      if (!window.THREE && !threeLoadedRef.current) {
+        console.log("Loading Three.js");
+        threeLoadedRef.current = true;
+        
+        // Load Three.js
+        const threeScript = document.createElement('script');
+        threeScript.src = 'https://unpkg.com/three@0.157.0/build/three.min.js';
+        threeScript.async = true;
+        threeScript.onload = () => {
+          console.log("Three.js loaded");
+          
+          // Load AR script after Three.js is loaded
+          const arScript = document.createElement('script');
+          arScript.src = '/ar.js';
+          arScript.async = true;
+          arScript.onload = () => {
+            console.log("AR script loaded");
+            
+            if (typeof window.initAR === 'function') {
+              console.log("Initializing AR");
+              window.initAR();
+            } else {
+              console.error("initAR function not available");
+            }
+          };
+          document.body.appendChild(arScript);
         };
+        document.head.appendChild(threeScript);
+      } else if (window.THREE) {
+        console.log("Three.js already loaded");
+        
+        // Check if AR script is loaded
+        if (typeof window.initAR === 'function') {
+          console.log("AR script already loaded, initializing AR");
+          window.initAR();
+        } else {
+          console.log("Loading AR script");
+          const arScript = document.createElement('script');
+          arScript.src = '/ar.js';
+          arScript.async = true;
+          arScript.onload = () => {
+            console.log("AR script loaded");
+            if (typeof window.initAR === 'function') {
+              window.initAR();
+            }
+          };
+          document.body.appendChild(arScript);
+        }
       }
     }
-  }, []);
+  };
 
   return (
     <div className="app-container">
@@ -180,14 +203,14 @@ export default function ARGeolocation() {
         <button 
           className={`tab-btn ${activeTab === 'map-view' ? 'active' : ''}`} 
           data-tab="map-view"
-          onClick={() => setActiveTab('map-view')}
+          onClick={() => handleTabClick('map-view')}
         >
           Map View
         </button>
         <button 
           className={`tab-btn ${activeTab === 'ar-view' ? 'active' : ''}`} 
           data-tab="ar-view"
-          onClick={() => setActiveTab('ar-view')}
+          onClick={() => handleTabClick('ar-view')}
         >
           AR View
         </button>
@@ -205,17 +228,17 @@ export default function ARGeolocation() {
         <div className="ar-controls">
           <button 
             id="back-to-map" 
-            onClick={() => setActiveTab('map-view')}
+            onClick={() => handleTabClick('map-view')}
           >
             Back to Map
           </button>
         </div>
-        <div id="ar-scene">
+        <div id="ar-scene" ref={arSceneRef}>
           <div className="ar-message">
             <h2>AR View</h2>
             <p>
-              AR functionality will be displayed here. 
-              For now, you can return to the map view to place objects.
+              Click "Start AR" below to view your placed objects in augmented reality.
+              You'll be able to place them in your real-world environment.
             </p>
           </div>
         </div>
