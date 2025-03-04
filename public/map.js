@@ -588,6 +588,9 @@ window.onload = function() {
         
         // Load saved items after a delay to ensure map is fully loaded
         setTimeout(loadPlacedItems, 1000);
+        
+        // Set up tab switching
+        setupTabSwitching();
     }, 500);
     
     // Add click handler for item deletion
@@ -599,6 +602,51 @@ window.onload = function() {
     });
 };
 
+// Set up tab switching
+function setupTabSwitching() {
+    console.log("Setting up tab switching...");
+    
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    
+    if (tabButtons.length === 0) {
+        console.log("No tab buttons found");
+        return;
+    }
+    
+    console.log(`Found ${tabButtons.length} tab buttons`);
+    
+    tabButtons.forEach(button => {
+        button.addEventListener('click', function(e) {
+            const tabId = this.getAttribute('data-tab');
+            if (!tabId) return;
+            
+            console.log(`Tab button clicked: ${tabId}`);
+            
+            // Update active tab button
+            tabButtons.forEach(btn => btn.classList.remove('active'));
+            this.classList.add('active');
+            
+            // Show the selected tab content
+            const tabContents = document.querySelectorAll('.tab-content');
+            tabContents.forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            const selectedTab = document.getElementById(tabId);
+            if (selectedTab) {
+                selectedTab.classList.add('active');
+            }
+        });
+    });
+    
+    // Set up back-to-map button
+    const backToMapBtn = document.getElementById('back-to-map');
+    if (backToMapBtn) {
+        console.log("Found back to map button");
+        backToMapBtn.addEventListener('click', backToMap);
+    }
+}
+
 // Model select change event
 function modelSelectChange(e) {
     selectedModel = e.target.value;
@@ -606,8 +654,34 @@ function modelSelectChange(e) {
 
 // Back to map button (in AR view)
 function backToMap() {
+    console.log("Back to map button clicked");
+    
+    // Try to find and click the map view tab button
     const mapTabBtn = document.querySelector('[data-tab="map-view"]');
-    if (mapTabBtn) mapTabBtn.click();
+    if (mapTabBtn) {
+        console.log("Found map tab button, clicking it");
+        mapTabBtn.click();
+    } else {
+        console.log("Map tab button not found, trying alternative approach");
+        
+        // Alternative: directly update the tab classes
+        const mapView = document.getElementById('map-view');
+        const arView = document.getElementById('ar-view');
+        const mapTabBtn = document.querySelector('.tab-btn[data-tab="map-view"]');
+        const arTabBtn = document.querySelector('.tab-btn[data-tab="ar-view"]');
+        
+        if (mapView && arView) {
+            // Update tab contents
+            mapView.classList.add('active');
+            arView.classList.remove('active');
+            
+            // Update tab buttons
+            if (mapTabBtn && arTabBtn) {
+                mapTabBtn.classList.add('active');
+                arTabBtn.classList.remove('active');
+            }
+        }
+    }
 }
 
 // Make sure pop-ups close properly on mobile

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import Script from 'next/script';
 // Import styles properly
 import '../../public/styles.css';
@@ -27,11 +27,56 @@ declare global {
 export default function ARGeolocation() {
   const mapRef = useRef<HTMLDivElement>(null);
   const leafletLoadedRef = useRef(false);
+  const [activeTab, setActiveTab] = useState('map-view');
 
   useEffect(() => {
     console.log("ARGeolocation component mounted");
     loadMap();
+    
+    // Set up tab switching
+    setupTabSwitching();
+    
+    return () => {
+      // Clean up event listeners
+      const tabButtons = document.querySelectorAll('.tab-btn');
+      tabButtons.forEach(button => {
+        button.removeEventListener('click', handleTabClick);
+      });
+    };
   }, []);
+
+  const setupTabSwitching = () => {
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(button => {
+      button.addEventListener('click', handleTabClick);
+    });
+  };
+
+  const handleTabClick = (e: Event) => {
+    const target = e.currentTarget as HTMLElement;
+    const tabId = target.getAttribute('data-tab');
+    
+    if (!tabId) return;
+    
+    console.log(`Switching to tab: ${tabId}`);
+    setActiveTab(tabId);
+    
+    // Update active tab button
+    const tabButtons = document.querySelectorAll('.tab-btn');
+    tabButtons.forEach(btn => btn.classList.remove('active'));
+    target.classList.add('active');
+    
+    // Show the selected tab content
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    const selectedTab = document.getElementById(tabId);
+    if (selectedTab) {
+      selectedTab.classList.add('active');
+    }
+  };
 
   const loadMap = () => {
     if (typeof window !== 'undefined') {
@@ -132,11 +177,23 @@ export default function ARGeolocation() {
   return (
     <div className="app-container">
       <div className="tabs">
-        <button className="tab-btn active" data-tab="map-view">Map View</button>
-        <button className="tab-btn" data-tab="ar-view">AR View</button>
+        <button 
+          className={`tab-btn ${activeTab === 'map-view' ? 'active' : ''}`} 
+          data-tab="map-view"
+          onClick={() => setActiveTab('map-view')}
+        >
+          Map View
+        </button>
+        <button 
+          className={`tab-btn ${activeTab === 'ar-view' ? 'active' : ''}`} 
+          data-tab="ar-view"
+          onClick={() => setActiveTab('ar-view')}
+        >
+          AR View
+        </button>
       </div>
       
-      <div id="map-view" className="tab-content active">
+      <div id="map-view" className={`tab-content ${activeTab === 'map-view' ? 'active' : ''}`}>
         <div id="map" ref={mapRef} style={{width: '100%', height: 'calc(100vh - 120px)'}}></div>
         <div id="placed-items-list">
           <h3>Placed Items</h3>
@@ -144,11 +201,24 @@ export default function ARGeolocation() {
         </div>
       </div>
       
-      <div id="ar-view" className="tab-content">
+      <div id="ar-view" className={`tab-content ${activeTab === 'ar-view' ? 'active' : ''}`}>
         <div className="ar-controls">
-          <button id="back-to-map">Back to Map</button>
+          <button 
+            id="back-to-map" 
+            onClick={() => setActiveTab('map-view')}
+          >
+            Back to Map
+          </button>
         </div>
-        <div id="ar-scene"></div>
+        <div id="ar-scene">
+          <div className="ar-message">
+            <h2>AR View</h2>
+            <p>
+              AR functionality will be displayed here. 
+              For now, you can return to the map view to place objects.
+            </p>
+          </div>
+        </div>
       </div>
     </div>
   );
