@@ -1,7 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
-import styles from './ARGeolocation.module.css';
+import { useEffect } from 'react';
 import Script from 'next/script';
 
 // Import scripts in the client component
