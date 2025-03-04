@@ -2,16 +2,28 @@
 
 import { useEffect } from 'react';
 import Script from 'next/script';
+// Import styles properly
+import '../../public/styles.css';
+
+// Declare global window extensions
+declare global {
+  interface Window {
+    L: any;
+    initMap: () => void;
+    setupApp: () => void;
+    mapInitialized: boolean;
+  }
+}
 
 // Import scripts in the client component
 export default function ARGeolocation() {
   useEffect(() => {
     // We'll initialize the map after all scripts are loaded
     const loadMap = () => {
-      const mapScriptLoaded = (window as any).L;
+      const mapScriptLoaded = window.L;
       if (mapScriptLoaded && document.getElementById('map')) {
         // Initialize the map when the component mounts and Leaflet is loaded
-        const initMapFunction = (window as any).initMap;
+        const initMapFunction = window.initMap;
         if (typeof initMapFunction === 'function') {
           setTimeout(() => {
             initMapFunction();
@@ -25,8 +37,8 @@ export default function ARGeolocation() {
 
     // Add event listener for DOMContentLoaded to handle app.js initialization
     const handleDOMContentLoaded = () => {
-      if ((window as any).setupApp && typeof (window as any).setupApp === 'function') {
-        (window as any).setupApp();
+      if (window.setupApp && typeof window.setupApp === 'function') {
+        window.setupApp();
       }
     };
 
@@ -43,9 +55,6 @@ export default function ARGeolocation() {
 
   return (
     <>
-      {/* Add our custom stylesheet */}
-      <link rel="stylesheet" href="/styles.css" />
-      
       {/* Load Leaflet before other scripts */}
       <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="beforeInteractive" />
       
