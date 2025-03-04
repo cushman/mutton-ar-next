@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR Geo Placement App</title>
+    <link rel="stylesheet" href="styles.css">
+    <!-- Leaflet for the map -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <!-- AR.js and Three.js for AR -->
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://raw.githack.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js"></script>
+</head>
+<body>
+    <div class="app-container">
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="map-view">Map View</button>
+            <button class="tab-btn" data-tab="ar-view">AR View</button>
+        </div>
+        
+        <div class="tab-content active" id="map-view">
+            <div id="map"></div>
+            <div class="controls">
+                <select id="model-select">
+                    <option value="sheep">Sheep</option>
+                    <option value="cube">Cube</option>
+                </select>
+                <button id="place-btn">Place on Map</button>
+                <div id="instructions">Click on the map to place the selected object</div>
+                <div id="placed-items-list">
+                    <h3>Placed Items</h3>
+                    <ul id="items-list"></ul>
+                </div>
+            </div>
+        </div>
+        
+        <div class="tab-content" id="ar-view">
+            <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
+                <!-- The AR content will be generated here -->
+                <a-entity id="ar-content"></a-entity>
+                
+                <a-camera gps-camera rotation-reader></a-camera>
+            </a-scene>
+            <div class="ar-controls">
+                <button id="back-to-map">Back to Map</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="models/sheep.js"></script>
+    <script src="map.js"></script>
+    <script src="ar.js"></script>
+    <script src="app.js"></script>
+</body>
+</html> 
