@@ -8,44 +8,73 @@ let isPlacingMode = false;
 
 // Initialize the map
 function initMap() {
-    // Create the map centered on the user's location
-    navigator.geolocation.getCurrentPosition(
-        position => {
-            const { latitude, longitude } = position.coords;
-            
-            map = L.map('map').setView([latitude, longitude], 18);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            
-            // Add user marker
-            L.marker([latitude, longitude], {
-                icon: L.divIcon({
-                    html: '<div class="user-marker"></div>',
-                    className: 'user-marker-container'
-                })
-            }).addTo(map);
-            
-            // Add click listener for placing items
-            map.on('click', handleMapClick);
-            
-            // Load any previously saved items
-            loadPlacedItems();
-        },
-        error => {
-            console.error('Error getting location:', error);
-            // Default to a generic location if geolocation fails
-            map = L.map('map').setView([0, 0], 2);
-            
-            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-            }).addTo(map);
-            
-            map.on('click', handleMapClick);
-            loadPlacedItems();
-        }
-    );
+    console.log("Initializing map...");
+    
+    try {
+        // Create the map centered on the user's location or a default location
+        const defaultLocation = [40.7128, -74.0060]; // New York City as default
+        
+        navigator.geolocation.getCurrentPosition(
+            position => {
+                const { latitude, longitude } = position.coords;
+                console.log("Got user location:", latitude, longitude);
+                createMap([latitude, longitude]);
+            },
+            error => {
+                console.error('Error getting location:', error);
+                // Default to a generic location if geolocation fails
+                createMap(defaultLocation);
+            },
+            { timeout: 5000 } // 5 second timeout
+        );
+        
+        // If geolocation takes too long, initialize with default
+        setTimeout(() => {
+            if (!map) {
+                console.log("Geolocation timeout - using default location");
+                createMap(defaultLocation);
+            }
+        }, 3000);
+    } catch (e) {
+        console.error("Error in initMap:", e);
+        // Fallback to default location
+        createMap([40.7128, -74.0060]);
+    }
+}
+
+function createMap(center) {
+    if (map) return; // Prevent duplicate initialization
+    
+    try {
+        console.log("Creating map at:", center);
+        
+        // Create the map
+        map = L.map('map').setView(center, 13);
+        
+        // Use a reliable tile provider
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+            maxZoom: 19
+        }).addTo(map);
+        
+        // Add user marker
+        L.marker(center, {
+            icon: L.divIcon({
+                html: '<div class="user-marker"></div>',
+                className: 'user-marker-container'
+            })
+        }).addTo(map);
+        
+        // Add click listener for placing items
+        map.on('click', handleMapClick);
+        
+        // Load any previously saved items
+        loadPlacedItems();
+        
+        console.log("Map initialization complete");
+    } catch (e) {
+        console.error("Error creating map:", e);
+    }
 }
 
 // Handle map clicks for placing items

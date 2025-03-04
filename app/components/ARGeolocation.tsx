@@ -29,27 +29,43 @@ declare global {
 // Import scripts in the client component
 export default function ARGeolocation() {
   useEffect(() => {
+    // Add debugging to see what's happening
+    console.log("ARGeolocation component mounted");
+    
     // We'll initialize the map after all scripts are loaded
     const loadMap = () => {
-      const mapScriptLoaded = window.L;
-      if (mapScriptLoaded && document.getElementById('map')) {
+      console.log("loadMap function called");
+      console.log("Leaflet available:", typeof window.L);
+      console.log("Map element exists:", !!document.getElementById('map'));
+      
+      if (window.L && document.getElementById('map')) {
         // Initialize the map when the component mounts and Leaflet is loaded
-        const initMapFunction = window.initMap;
-        if (typeof initMapFunction === 'function') {
+        console.log("initMap function exists:", typeof window.initMap);
+        if (typeof window.initMap === 'function') {
+          console.log("Calling initMap function");
           setTimeout(() => {
-            initMapFunction();
+            window.initMap();
           }, 500); // Short delay to ensure DOM is ready
         }
+      } else {
+        console.log("Either Leaflet or map element not ready yet");
       }
     };
 
-    // Check if scripts are loaded and initialize
-    loadMap();
+    // Try to initialize map after a short delay
+    setTimeout(loadMap, 1000);
+    
+    // Also try on window load
+    window.addEventListener('load', loadMap);
 
     // Add event listener for DOMContentLoaded to handle app.js initialization
     const handleDOMContentLoaded = () => {
+      console.log("DOMContentLoaded triggered");
       if (window.setupApp && typeof window.setupApp === 'function') {
+        console.log("Calling setupApp function");
         window.setupApp();
+      } else {
+        console.log("setupApp function not available");
       }
     };
 
@@ -61,13 +77,19 @@ export default function ARGeolocation() {
 
     return () => {
       document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded);
+      window.removeEventListener('load', loadMap);
     };
   }, []);
 
   return (
     <>
       {/* Load Leaflet before other scripts */}
-      <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="beforeInteractive" />
+      <Script 
+        src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" 
+        strategy="beforeInteractive"
+        onLoad={() => console.log("Leaflet script loaded")}
+        onError={() => console.error("Failed to load Leaflet")}
+      />
       
       {/* Load A-Frame and AR.js scripts */}
       <Script src="https://aframe.io/releases/1.4.0/aframe.min.js" strategy="beforeInteractive" />
@@ -75,10 +97,32 @@ export default function ARGeolocation() {
       <Script src="https://raw.githack.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js" strategy="beforeInteractive" />
       
       {/* Load app scripts */}
-      <Script src="/models/sheep.js" strategy="afterInteractive" />
-      <Script src="/map.js" strategy="afterInteractive" />
+      <Script 
+        src="/models/sheep.js" 
+        strategy="afterInteractive" 
+        onLoad={() => console.log("Sheep model loaded")}
+      />
+      <Script 
+        src="/map.js" 
+        strategy="afterInteractive" 
+        onLoad={() => {
+          console.log("Map script loaded");
+          // Try to initialize map after script loads
+          if (window.L && document.getElementById('map')) {
+            console.log("Attempting to initialize map after script load");
+            setTimeout(() => window.initMap && window.initMap(), 300);
+          }
+        }}
+      />
       <Script src="/ar.js" strategy="afterInteractive" />
-      <Script src="/app.js" strategy="afterInteractive" />
+      <Script 
+        src="/app.js" 
+        strategy="afterInteractive" 
+        onLoad={() => {
+          console.log("App script loaded");
+          if (window.setupApp) window.setupApp();
+        }}
+      />
       
       <div className="app-container">
         <div className="tabs">

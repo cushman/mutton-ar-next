@@ -25,7 +25,8 @@ export default function RootLayout({
   return (
     <html lang="en">
       <head>
-        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+        <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossOrigin="anonymous" />
+        <link rel="stylesheet" href="/styles.css" />
         <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" async></script>
         <script src="https://aframe.io/releases/1.4.0/aframe.min.js" async></script>
         <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" async></script>
