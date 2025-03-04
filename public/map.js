@@ -15,8 +15,8 @@ let currentModelDragging = null;
 
 // Available models
 const availableModels = [
-    { id: 'sheep', name: 'Sheep', icon: 'sheep.svg' },
-    { id: 'cube', name: 'Cube', icon: 'cube.svg' }
+    { id: 'sheep', name: 'Sheep', icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE0IiBmaWxsPSIjZmZmZmZmIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMSIvPgogICAgPGNpcmNsZSBjeD0iMTAiIGN5PSIxMiIgcj0iMiIgZmlsbD0iIzAwMDAwMCIvPgogICAgPGNpcmNsZSBjeD0iMjIiIGN5PSIxMiIgcj0iMiIgZmlsbD0iIzAwMDAwMCIvPgogICAgPGVsbGlwc2UgY3g9IjE2IiBjeT0iMjAiIHJ4PSI2IiByeT0iNCIgZmlsbD0iIzAwMDAwMCIvPgogICAgPHBhdGggZD0iTTggOCBRIDE2IDQsIDI0IDgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPg==' },
+    { id: 'cube', name: 'Cube', icon: 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzQyODVmNCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjIiLz4KICAgIDxsaW5lIHgxPSI0IiB5MT0iNCIgeDI9IjI4IiB5Mj0iMjgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgICA8bGluZSB4MT0iMjgiIHkxPSI0IiB4Mj0iNCIgeTI9IjI4IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=' }
 ];
 
 // Check if the device is mobile
@@ -32,6 +32,15 @@ function initMap(containerId = 'map') {
     // Check if we're on a mobile device
     checkMobileDevice();
     
+    // Make sure the map container exists
+    const mapContainer = document.getElementById(containerId);
+    if (!mapContainer) {
+        console.error(`Map container #${containerId} not found!`);
+        return;
+    }
+    
+    console.log(`Map container found: ${mapContainer.id}`);
+    
     // Check if map is already initialized
     if (map) {
         console.log("Map already initialized.");
@@ -40,6 +49,7 @@ function initMap(containerId = 'map') {
     
     try {
         // Create the map centered on a default location
+        console.log("Creating map instance...");
         map = L.map(containerId, {
             center: [51.505, -0.09],
             zoom: 13,
@@ -48,14 +58,20 @@ function initMap(containerId = 'map') {
             zoomControl: true
         });
         
+        console.log("Map instance created successfully");
+        
         // Add tile layer
+        console.log("Adding tile layer...");
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
             maxZoom: 19,
             attribution: '© OpenStreetMap contributors'
         }).addTo(map);
         
+        console.log("Tile layer added successfully");
+        
         // Get user's location and center the map
         if (navigator.geolocation) {
+            console.log("Getting user location...");
             navigator.geolocation.getCurrentPosition(
                 (position) => {
                     const { latitude, longitude } = position.coords;
@@ -76,8 +92,14 @@ function initMap(containerId = 'map') {
                 },
                 (error) => {
                     console.error("Error getting location:", error);
+                    // Set a default location if geolocation fails
+                    map.setView([51.505, -0.09], 13);
                 }
             );
+        } else {
+            console.log("Geolocation not available");
+            // Set a default location
+            map.setView([51.505, -0.09], 13);
         }
         
         // Create drop highlight element (shows where item will be placed)
@@ -86,19 +108,8 @@ function initMap(containerId = 'map') {
         // Create drag preview element
         createDragPreview();
         
-        // Disable map drag when interacting with the model library
-        const modelLibrary = document.querySelector('.model-library');
-        if (modelLibrary) {
-            modelLibrary.addEventListener('touchstart', (e) => {
-                map.dragging.disable();
-            }, { passive: true });
-            
-            modelLibrary.addEventListener('touchend', (e) => {
-                setTimeout(() => {
-                    map.dragging.enable();
-                }, 100);
-            }, { passive: true });
-        }
+        // Create the model library
+        setTimeout(createModelLibrary, 500);
         
         console.log("Map initialization complete.");
     } catch (error) {
@@ -109,6 +120,12 @@ function initMap(containerId = 'map') {
 // Create the model library with draggable items
 function createModelLibrary() {
     console.log("Creating model library...");
+    
+    // Check if library already exists
+    if (document.querySelector('.model-library')) {
+        console.log("Model library already exists");
+        return;
+    }
     
     // Create container
     const modelLibrary = document.createElement('div');
@@ -144,10 +161,30 @@ function createModelLibrary() {
     document.body.appendChild(modelLibrary);
     
     console.log("Model library created");
+    
+    // Disable map drag when interacting with the model library
+    if (map && modelLibrary) {
+        modelLibrary.addEventListener('touchstart', (e) => {
+            if (map.dragging) map.dragging.disable();
+        }, { passive: true });
+        
+        modelLibrary.addEventListener('touchend', (e) => {
+            setTimeout(() => {
+                if (map.dragging) map.dragging.enable();
+            }, 100);
+        }, { passive: true });
+    }
 }
 
 // Create the drop highlight element
 function createDropHighlight() {
+    console.log("Creating drop highlight element");
+    
+    if (document.querySelector('.drop-highlight')) {
+        dropHighlight = document.querySelector('.drop-highlight');
+        return;
+    }
+    
     dropHighlight = document.createElement('div');
     dropHighlight.className = 'drop-highlight';
     document.body.appendChild(dropHighlight);
@@ -155,6 +192,13 @@ function createDropHighlight() {
 
 // Create the drag preview element
 function createDragPreview() {
+    console.log("Creating drag preview element");
+    
+    if (document.querySelector('.drag-preview')) {
+        dragPreview = document.querySelector('.drag-preview');
+        return;
+    }
+    
     dragPreview = document.createElement('div');
     dragPreview.className = 'drag-preview';
     document.body.appendChild(dragPreview);
@@ -177,10 +221,23 @@ function startDragging(e) {
     const pageX = e.clientX || (e.touches && e.touches[0].clientX);
     const pageY = e.clientY || (e.touches && e.touches[0].clientY);
     
+    if (!pageX || !pageY) {
+        console.error("Could not determine touch position");
+        return;
+    }
+    
+    console.log(`Initial drag position: ${pageX}, ${pageY}`);
+    
     // Clone the model item for the drag preview
     dragPreview.innerHTML = '';
     const icon = document.createElement('img');
-    icon.src = availableModels.find(m => m.id === currentModelDragging).icon;
+    const modelData = availableModels.find(m => m.id === currentModelDragging);
+    if (!modelData) {
+        console.error(`Model data not found for ${currentModelDragging}`);
+        return;
+    }
+    
+    icon.src = modelData.icon;
     icon.alt = currentModelDragging;
     dragPreview.appendChild(icon);
     
@@ -198,7 +255,7 @@ function startDragging(e) {
     }
     
     // Disable map dragging while dragging an item
-    if (map) {
+    if (map && map.dragging) {
         map.dragging.disable();
     }
 }
@@ -218,18 +275,26 @@ function onDragging(e) {
     const pageX = e.clientX || (e.touches && e.touches[0].clientX);
     const pageY = e.clientY || (e.touches && e.touches[0].clientY);
     
+    if (!pageX || !pageY) {
+        console.error("Could not determine drag position");
+        return;
+    }
+    
     updateDragPreviewPosition(pageX, pageY);
     
     // Check if we're over the map
     const mapElement = document.getElementById('map');
-    if (!mapElement) return;
+    if (!mapElement) {
+        console.error("Map element not found!");
+        return;
+    }
     
     const mapRect = mapElement.getBoundingClientRect();
     
     const isOverMap = pageX >= mapRect.left && 
-                     pageX <= mapRect.right && 
-                     pageY >= mapRect.top && 
-                     pageY <= mapRect.bottom;
+                    pageX <= mapRect.right && 
+                    pageY >= mapRect.top && 
+                    pageY <= mapRect.bottom;
     
     if (isOverMap && map) {
         // Convert screen coordinates to map point
@@ -270,48 +335,73 @@ function stopDragging(e) {
     });
     
     // Hide drag preview
-    dragPreview.style.display = 'none';
+    if (dragPreview) {
+        dragPreview.style.display = 'none';
+    }
     
-    // Check if we're over the map
+    // Get the position where we stopped dragging
     const pageX = e.clientX || 
-                 (e.changedTouches && e.changedTouches[0].clientX);
+                (e.changedTouches && e.changedTouches[0].clientX);
     const pageY = e.clientY || 
-                 (e.changedTouches && e.changedTouches[0].clientY);
+                (e.changedTouches && e.changedTouches[0].clientY);
+    
+    if (!pageX || !pageY) {
+        console.error("Could not determine drop position");
+        currentModelDragging = null;
+        if (dropHighlight) dropHighlight.style.display = 'none';
+        if (map && map.dragging) map.dragging.enable();
+        return;
+    }
+    
+    console.log(`Drop position: ${pageX}, ${pageY}`);
     
     const mapElement = document.getElementById('map');
     if (!mapElement || !map) {
+        console.error("Map element or map instance not found");
         currentModelDragging = null;
-        dropHighlight.style.display = 'none';
-        map.dragging.enable();
+        if (dropHighlight) dropHighlight.style.display = 'none';
+        if (map && map.dragging) map.dragging.enable();
         return;
     }
     
     const mapRect = mapElement.getBoundingClientRect();
+    console.log(`Map rect: left=${mapRect.left}, right=${mapRect.right}, top=${mapRect.top}, bottom=${mapRect.bottom}`);
     
     const isOverMap = pageX >= mapRect.left && 
-                     pageX <= mapRect.right && 
-                     pageY >= mapRect.top && 
-                     pageY <= mapRect.bottom;
+                    pageX <= mapRect.right && 
+                    pageY >= mapRect.top && 
+                    pageY <= mapRect.bottom;
+    
+    console.log(`Is over map: ${isOverMap}`);
     
     if (isOverMap) {
-        // Convert screen coordinates to map point
-        const point = L.point(
-            pageX - mapRect.left, 
-            pageY - mapRect.top
-        );
-        
-        // Convert point to LatLng
-        const latlng = map.containerPointToLatLng(point);
-        
-        // Place the item at this location
-        placeItemAtLocation(latlng, currentModelDragging);
+        try {
+            // Convert screen coordinates to map point
+            const point = L.point(
+                pageX - mapRect.left, 
+                pageY - mapRect.top
+            );
+            
+            // Convert point to LatLng
+            const latlng = map.containerPointToLatLng(point);
+            console.log(`Drop LatLng: ${latlng.lat}, ${latlng.lng}`);
+            
+            // Place the item at this location
+            placeItemAtLocation(latlng, currentModelDragging);
+        } catch (error) {
+            console.error("Error placing item:", error);
+        }
     }
     
     // Re-enable map dragging
-    map.dragging.enable();
+    if (map && map.dragging) {
+        map.dragging.enable();
+    }
     
     // Hide drop highlight
-    dropHighlight.style.display = 'none';
+    if (dropHighlight) {
+        dropHighlight.style.display = 'none';
+    }
     
     // Reset current model dragging
     currentModelDragging = null;
@@ -319,7 +409,10 @@ function stopDragging(e) {
 
 // Place an item at a location
 function placeItemAtLocation(latlng, modelType) {
-    if (!map || !latlng || !modelType) return;
+    if (!map || !latlng || !modelType) {
+        console.error("Missing data for placing item:", { map: !!map, latlng, modelType });
+        return;
+    }
     
     console.log(`Placing ${modelType} at [${latlng.lat}, ${latlng.lng}]`);
     
@@ -331,7 +424,12 @@ function placeItemAtLocation(latlng, modelType) {
     };
     
     // Add marker to the map
-    addMarkerToMap(newItem);
+    const marker = addMarkerToMap(newItem);
+    
+    if (!marker) {
+        console.error("Failed to add marker to map");
+        return;
+    }
     
     // Add to list of markers
     markers.push(newItem);
@@ -341,19 +439,13 @@ function placeItemAtLocation(latlng, modelType) {
     
     // Save to local storage
     savePlacedItems();
+    
+    console.log(`Item placed successfully: ${newItem.id}`);
 }
 
 // Create SVG icon for sheep marker
 function createMapMarkerSheep() {
-    return 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-        <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="16" cy="16" r="14" fill="#ffffff" stroke="#000000" stroke-width="1"/>
-            <circle cx="10" cy="12" r="2" fill="#000000"/>
-            <circle cx="22" cy="12" r="2" fill="#000000"/>
-            <ellipse cx="16" cy="20" rx="6" ry="4" fill="#000000"/>
-            <path d="M8 8 Q 16 4, 24 8" fill="none" stroke="#000000" stroke-width="2"/>
-        </svg>
-    `);
+    return 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxjaXJjbGUgY3g9IjE2IiBjeT0iMTYiIHI9IjE0IiBmaWxsPSIjZmZmZmZmIiBzdHJva2U9IiMwMDAwMDAiIHN0cm9rZS13aWR0aD0iMSIvPgogICAgPGNpcmNsZSBjeD0iMTAiIGN5PSIxMiIgcj0iMiIgZmlsbD0iIzAwMDAwMCIvPgogICAgPGNpcmNsZSBjeD0iMjIiIGN5PSIxMiIgcj0iMiIgZmlsbD0iIzAwMDAwMCIvPgogICAgPGVsbGlwc2UgY3g9IjE2IiBjeT0iMjAiIHJ4PSI2IiByeT0iNCIgZmlsbD0iIzAwMDAwMCIvPgogICAgPHBhdGggZD0iTTggOCBRIDE2IDQsIDI0IDgiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzAwMDAwMCIgc3Ryb2tlLXdpZHRoPSIyIi8+Cjwvc3ZnPg==';
 }
 
 // Add a marker to the map for a placed item
@@ -364,39 +456,49 @@ function addMarkerToMap(item) {
         iconUrl = createMapMarkerSheep();
     } else {
         // Default cube icon
-        iconUrl = 'data:image/svg+xml;utf8,' + encodeURIComponent(`
-            <svg width="32" height="32" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
-                <rect x="4" y="4" width="24" height="24" fill="#4285f4" stroke="#ffffff" stroke-width="2"/>
-                <line x1="4" y1="4" x2="28" y2="28" stroke="#ffffff" stroke-width="1"/>
-                <line x1="28" y1="4" x2="4" y2="28" stroke="#ffffff" stroke-width="1"/>
-            </svg>
-        `);
+        iconUrl = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KICAgIDxyZWN0IHg9IjQiIHk9IjQiIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgZmlsbD0iIzQyODVmNCIgc3Ryb2tlPSIjZmZmZmZmIiBzdHJva2Utd2lkdGg9IjIiLz4KICAgIDxsaW5lIHgxPSI0IiB5MT0iNCIgeDI9IjI4IiB5Mj0iMjgiIHN0cm9rZT0iI2ZmZmZmZiIgc3Ryb2tlLXdpZHRoPSIxIi8+CiAgICA8bGluZSB4MT0iMjgiIHkxPSI0IiB4Mj0iNCIgeTI9IjI4IiBzdHJva2U9IiNmZmZmZmYiIHN0cm9rZS13aWR0aD0iMSIvPgo8L3N2Zz4=';
     }
     
-    const marker = L.marker([item.position.lat, item.position.lng], {
-        icon: L.icon({
-            iconUrl: iconUrl,
-            iconSize: [32, 32],
-            iconAnchor: [16, 16]
-        })
-    }).addTo(map);
-    
-    marker.bindPopup(`${item.model} (ID: ${item.id})<br>
-                     <button class="delete-btn" data-id="${item.id}">Remove</button>`);
-    
-    // Store marker reference
-    item.marker = marker;
-    
-    return marker;
+    try {
+        if (!map) {
+            console.error("Map not initialized when adding marker");
+            return null;
+        }
+        
+        const marker = L.marker([item.position.lat, item.position.lng], {
+            icon: L.icon({
+                iconUrl: iconUrl,
+                iconSize: [32, 32],
+                iconAnchor: [16, 16]
+            })
+        }).addTo(map);
+        
+        marker.bindPopup(`${item.model} (ID: ${item.id})<br>
+                        <button class="delete-btn" data-id="${item.id}">Remove</button>`);
+        
+        // Store marker reference
+        item.marker = marker;
+        
+        return marker;
+    } catch (error) {
+        console.error("Error adding marker to map:", error);
+        return null;
+    }
 }
 
 // Update the list of placed items in the UI
 function updatePlacedItemsList() {
     const listElement = document.getElementById('placed-items-list');
-    if (!listElement) return;
+    if (!listElement) {
+        console.error("Placed items list element not found");
+        return;
+    }
     
     const itemsList = document.getElementById('items-list');
-    if (!itemsList) return;
+    if (!itemsList) {
+        console.error("Items list element not found");
+        return;
+    }
     
     // Clear the list
     itemsList.innerHTML = '';
@@ -478,11 +580,15 @@ function loadPlacedItems() {
 // Initialize when window loads
 window.onload = function() {
     console.log("Window loaded");
-    initMap();
-    createModelLibrary();
     
-    // Load saved items
-    setTimeout(loadPlacedItems, 1000); // Delay to ensure map is fully loaded
+    // Set a timeout to ensure DOM is ready
+    setTimeout(() => {
+        console.log("Initializing map...");
+        initMap();
+        
+        // Load saved items after a delay to ensure map is fully loaded
+        setTimeout(loadPlacedItems, 1000);
+    }, 500);
     
     // Add click handler for item deletion
     document.addEventListener('click', function(e) {

@@ -5,23 +5,20 @@ import Script from 'next/script';
 // Import styles properly
 import '../../public/styles.css';
 
-// Declare global window extensions
-declare global {
-  // Basic type for Leaflet to avoid 'any'
-  interface LeafletStatic {
-    map: (elementId: string) => any;
-    tileLayer: (url: string, options?: any) => any;
-    marker: (coords: [number, number], options?: any) => any;
-    icon: (options: any) => any;
-    divIcon: (options: any) => any;
-  }
+// Define interfaces for TypeScript
+interface LeafletStatic {
+  map: (elementId: string) => any;
+  tileLayer: (url: string, options?: any) => any;
+  marker: (coords: [number, number], options?: any) => any;
+  icon: (options: any) => any;
+  divIcon: (options: any) => any;
+}
 
+// Extend Window interface as a global declaration
+declare global {
   interface Window {
-    // @ts-ignore
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     L: LeafletStatic;
-    initMap: () => void;
-    setupApp: () => void;
+    initMap: (containerId?: string) => void;
     mapInitialized: boolean;
   }
 }
@@ -29,57 +26,83 @@ declare global {
 // Import scripts in the client component
 export default function ARGeolocation() {
   const mapRef = useRef<HTMLDivElement>(null);
+  const leafletLoadedRef = useRef(false);
 
   useEffect(() => {
+    console.log("ARGeolocation component mounted");
     loadMap();
   }, []);
 
   const loadMap = () => {
     if (typeof window !== 'undefined') {
-      // Add Leaflet CSS
-      const link = document.createElement('link');
-      link.rel = 'stylesheet';
-      link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
-      link.integrity = 'sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=';
-      link.crossOrigin = '';
-      document.head.appendChild(link);
+      console.log("loadMap function called");
+      
+      // Add Leaflet CSS directly to head
+      if (!document.querySelector('link[href*="leaflet.css"]')) {
+        console.log("Adding Leaflet CSS");
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.css';
+        document.head.appendChild(link);
+      }
 
       // Load Leaflet JS if it's not already loaded
-      if (!window.L) {
+      if (!window.L && !leafletLoadedRef.current) {
+        console.log("Loading Leaflet JS");
+        leafletLoadedRef.current = true;
+        
         const script = document.createElement('script');
         script.src = 'https://unpkg.com/leaflet@1.9.4/dist/leaflet.js';
-        script.integrity = 'sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV1lvTlZBo=';
-        script.crossOrigin = '';
         script.async = true;
         script.onload = () => {
-          // Once Leaflet is loaded, load our custom map script
+          console.log("Leaflet JS loaded");
           loadMapScript();
         };
         document.head.appendChild(script);
-      } else {
+      } else if (window.L) {
         // Leaflet already loaded, just load our custom map script
+        console.log("Leaflet already loaded");
         loadMapScript();
       }
     }
   };
 
   const loadMapScript = () => {
+    console.log("loadMapScript called");
+    
     // Only load the map script if it hasn't been loaded yet
     if (typeof window.initMap === 'undefined') {
+      console.log("Loading map.js");
       const mapScript = document.createElement('script');
       mapScript.src = '/map.js';
       mapScript.async = true;
       mapScript.onload = () => {
         console.log('Map script loaded');
-        if (typeof window.initMap === 'function' && !window.mapInitialized) {
-          window.mapInitialized = true;
-          console.log('Initializing map');
+        
+        // Ensure the map container exists before initializing
+        if (mapRef.current && typeof window.initMap === 'function') {
+          console.log("Map container exists, initializing...");
+          if (!window.mapInitialized) {
+            window.mapInitialized = true;
+            setTimeout(() => {
+              console.log("Calling initMap");
+              window.initMap('map');
+            }, 500);  // Give a short delay to ensure DOM is ready
+          }
+        } else {
+          console.log("Map container or initMap not available yet");
         }
       };
       document.body.appendChild(mapScript);
     } else if (!window.mapInitialized) {
+      console.log("Map script already loaded but not initialized");
       window.mapInitialized = true;
-      console.log('Map script already loaded, initializing map');
+      setTimeout(() => {
+        console.log("Calling initMap (already loaded)");
+        window.initMap('map');
+      }, 100);
+    } else {
+      console.log("Map already initialized");
     }
   };
 
@@ -114,7 +137,7 @@ export default function ARGeolocation() {
       </div>
       
       <div id="map-view" className="tab-content active">
-        <div id="map" ref={mapRef}></div>
+        <div id="map" ref={mapRef} style={{width: '100%', height: 'calc(100vh - 120px)'}}></div>
         <div id="placed-items-list">
           <h3>Placed Items</h3>
           <ul id="items-list"></ul>
