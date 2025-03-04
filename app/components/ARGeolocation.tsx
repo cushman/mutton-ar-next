@@ -7,8 +7,19 @@ import '../../public/styles.css';
 
 // Declare global window extensions
 declare global {
+  // Basic type for Leaflet to avoid 'any'
+  interface LeafletStatic {
+    map: (elementId: string) => any;
+    tileLayer: (url: string, options?: any) => any;
+    marker: (coords: [number, number], options?: any) => any;
+    icon: (options: any) => any;
+    divIcon: (options: any) => any;
+  }
+
   interface Window {
-    L: any;
+    // @ts-ignore
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    L: LeafletStatic;
     initMap: () => void;
     setupApp: () => void;
     mapInitialized: boolean;
