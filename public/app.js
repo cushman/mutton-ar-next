@@ -1,9 +1,18 @@
 // Main application logic
 
 // Initialize when DOM is loaded
-document.addEventListener('DOMContentLoaded', () => {
-    // Initialize map
-    initMap();
+document.addEventListener('DOMContentLoaded', setupApp);
+
+// Expose the setup function globally
+window.setupApp = setupApp;
+
+// Main setup function
+function setupApp() {
+    // Initialize map if not already initialized
+    if (!window.mapInitialized && typeof initMap === 'function') {
+        initMap();
+        window.mapInitialized = true;
+    }
     
     // Tab switching
     const tabButtons = document.querySelectorAll('.tab-btn');
@@ -29,18 +38,27 @@ document.addEventListener('DOMContentLoaded', () => {
     });
     
     // Model selection
-    document.getElementById('model-select').addEventListener('change', (e) => {
-        selectedModel = e.target.value;
-    });
+    const modelSelect = document.getElementById('model-select');
+    if (modelSelect) {
+        modelSelect.addEventListener('change', (e) => {
+            selectedModel = e.target.value;
+        });
+    }
     
     // Place button
-    document.getElementById('place-btn').addEventListener('click', () => {
-        isPlacingMode = true;
-        document.getElementById('instructions').textContent = 'Click on the map to place the item';
-    });
+    const placeBtn = document.getElementById('place-btn');
+    if (placeBtn) {
+        placeBtn.addEventListener('click', () => {
+            isPlacingMode = true;
+            document.getElementById('instructions').textContent = 'Click on the map to place the item';
+        });
+    }
     
     // Back to map button
-    document.getElementById('back-to-map').addEventListener('click', () => {
-        document.querySelector('[data-tab="map-view"]').click();
-    });
-}); 
+    const backToMapBtn = document.getElementById('back-to-map');
+    if (backToMapBtn) {
+        backToMapBtn.addEventListener('click', () => {
+            document.querySelector('[data-tab="map-view"]').click();
+        });
+    }
+} 

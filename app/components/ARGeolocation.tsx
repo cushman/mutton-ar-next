@@ -6,12 +6,55 @@ import Script from 'next/script';
 // Import scripts in the client component
 export default function ARGeolocation() {
   useEffect(() => {
-    // No dynamic imports here - we'll use Next.js Script component
+    // We'll initialize the map after all scripts are loaded
+    const loadMap = () => {
+      const mapScriptLoaded = (window as any).L;
+      if (mapScriptLoaded && document.getElementById('map')) {
+        // Initialize the map when the component mounts and Leaflet is loaded
+        const initMapFunction = (window as any).initMap;
+        if (typeof initMapFunction === 'function') {
+          setTimeout(() => {
+            initMapFunction();
+          }, 500); // Short delay to ensure DOM is ready
+        }
+      }
+    };
+
+    // Check if scripts are loaded and initialize
+    loadMap();
+
+    // Add event listener for DOMContentLoaded to handle app.js initialization
+    const handleDOMContentLoaded = () => {
+      if ((window as any).setupApp && typeof (window as any).setupApp === 'function') {
+        (window as any).setupApp();
+      }
+    };
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', handleDOMContentLoaded);
+    } else {
+      handleDOMContentLoaded();
+    }
+
+    return () => {
+      document.removeEventListener('DOMContentLoaded', handleDOMContentLoaded);
+    };
   }, []);
 
   return (
     <>
-      {/* Load scripts using Next.js Script component */}
+      {/* Add our custom stylesheet */}
+      <link rel="stylesheet" href="/styles.css" />
+      
+      {/* Load Leaflet before other scripts */}
+      <Script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" strategy="beforeInteractive" />
+      
+      {/* Load A-Frame and AR.js scripts */}
+      <Script src="https://aframe.io/releases/1.4.0/aframe.min.js" strategy="beforeInteractive" />
+      <Script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js" strategy="beforeInteractive" />
+      <Script src="https://raw.githack.com/donmccurdy/aframe-extras/master/dist/aframe-extras.loaders.min.js" strategy="beforeInteractive" />
+      
+      {/* Load app scripts */}
       <Script src="/models/sheep.js" strategy="afterInteractive" />
       <Script src="/map.js" strategy="afterInteractive" />
       <Script src="/ar.js" strategy="afterInteractive" />
